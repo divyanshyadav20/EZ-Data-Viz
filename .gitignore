@@ -1,0 +1,4 @@
+# python virtual env
+datavizflask
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
