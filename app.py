@@ -1,16 +1,21 @@
+# for serving web interface
 from flask import Flask, render_template, flash, redirect, request, url_for
 from werkzeug.utils import secure_filename
 from markupsafe import Markup, escape
 import re
 import os
 
+# for data handling and easy operation
 import pandas as pd
 import numpy as np
 import seaborn as sns
 
+# for data visualization
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
 
 app = Flask(__name__)
 
@@ -47,9 +52,6 @@ def csvuploader():
     global dataframe
     global dataColumns
     global dataLoad
-
-    # delete past plots
-    deletePlots()
 
     if request.method == 'POST':
         # check if a file is submitted or not
@@ -214,20 +216,13 @@ def charts():
     if not dataLoad:
         return redirect(url_for('featurechecker'))
 
-    # generate plots if they dont exists
-    if not os.path.exists("./static/plots/distplot.jpg"):
-        getDistplot()
+    # generate plots
+    distb64 = getDistplot()
+    countb64 = getCountplot()
+    pairb64 = getPairplot()
+    candleb64 = getCandleplot()
 
-    if not os.path.exists("./static/plots/countplot.jpg"):
-        getCountplot()
-
-    if not os.path.exists("./static/plots/pairplot.jpg"):
-        getPairplot()
-
-    if not os.path.exists("./static/plots/candleplot.jpg"):
-        getCandleplot()
-
-    return render_template("charts.html")
+    return render_template("charts.html", distb64 = distb64, countb64 = countb64, pairb64 = pairb64, candleb64 = candleb64)
 
 @app.route('/test')
 def test():
@@ -258,7 +253,7 @@ def uploadChecker(filename):
     '''
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def getDistplot(path = './static/plots/distplot.jpg'):
+def getDistplot():
     '''
     Plots distribution plot for all dataframe columns and saves the plot.
 
@@ -271,8 +266,14 @@ def getDistplot(path = './static/plots/distplot.jpg'):
         sns.distplot(dataframe_num[col], hist=True, ax=ax[i])
         ax[i].set_ylabel(col, fontsize=8)
 
-    fig.savefig(path)
+    img = BytesIO()
+    fig.savefig(img, format='png')
     plt.close(fig)
+
+    img.seek(0)
+    b64img = base64.b64encode(img.getvalue()).decode('utf8')
+
+    return b64img
 
 def getCountplot(path = './static/plots/countplot.jpg'):
     '''
@@ -292,8 +293,14 @@ def getCountplot(path = './static/plots/countplot.jpg'):
         dataframe[col].value_counts().plot.bar(ax=ax[i])
         ax[i].set_title(col, fontsize=10)
 
-    fig.savefig(path)
+    img = BytesIO()
+    fig.savefig(img, format='png')
     plt.close(fig)
+
+    img.seek(0)
+    b64img = base64.b64encode(img.getvalue()).decode('utf8')
+
+    return b64img
 
 def getPairplot(path = './static/plots/pairplot.jpg'):
     '''
@@ -304,7 +311,14 @@ def getPairplot(path = './static/plots/pairplot.jpg'):
     '''
     tdf = dataframe_num[dataColumns]
     pp = sns.pairplot(tdf)
-    pp.savefig(path)
+    
+    img = BytesIO()
+    pp.savefig(img, format='png')
+
+    img.seek(0)
+    b64img = base64.b64encode(img.getvalue()).decode('utf8')
+
+    return b64img
 
 def getCandleplot(path = './static/plots/candleplot.jpg'):
     '''
@@ -324,20 +338,14 @@ def getCandleplot(path = './static/plots/candleplot.jpg'):
         sns.boxplot(y = dataframe[col], ax = ax[i])
         ax[i].set_xlabel(col, fontsize=8)
 
-    fig.savefig(path)
+    img = BytesIO()
+    fig.savefig(img, format='png')
     plt.close(fig)
 
-def deletePlots():
-    '''
-    Deletes saved plots.
-    '''
-    try:
-        os.remove('./static/plots/candleplot.jpg')
-        os.remove('./static/plots/pairplot.jpg')
-        os.remove('./static/plots/countplot.jpg')
-        os.remove('./static/plots/distplot.jpg')
-    except:
-        pass
+    img.seek(0)
+    b64img = base64.b64encode(img.getvalue()).decode('utf8')
+
+    return b64img
 
 ########################################################################################################### Main
 

@@ -42,7 +42,7 @@
             <hr class="sidebar-divider my-0">
 
             <!-- Nav Item - Dashboard -->
-            <li class="nav-item active">
+            <li class="nav-item">
                 <a class="nav-link" href="index">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>Dashboard</span></a>
@@ -57,7 +57,7 @@
             </div>
 
             <!-- Nav Item - Charts -->
-            <li class="nav-item">
+            <li class="nav-item active">
                 <a class="nav-link" href="charts">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Charts</span></a>
@@ -110,7 +110,7 @@
 
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+                        <h1 class="h3 mb-0 text-gray-800">Charts</h1>
                     </div>
 
                     <!-- Collapsable Card Example
@@ -139,7 +139,7 @@
 
                         <div class="collapse show" id="collapseCardExample0">
                             <div class="card-body">
-                                <img src = "{{ url_for('static', filename='plots/distplot.jpg') }}" style='height: 100%; width: 100%; object-fit: contain'>
+                                <img src = "data:image/png;base64, {{ distb64 }}" style='height: 100%; width: 100%; object-fit: contain'>
                             </div>
                         </div>
                     </div>
@@ -155,7 +155,7 @@
 
                         <div class="collapse show" id="collapseCardExample1">
                             <div class="card-body">
-                                <img src = "{{ url_for('static', filename='plots/countplot.jpg') }}" style='height: 100%; width: 100%; object-fit: contain'>
+                                <img src = "data:image/png;base64, {{ countb64 }}" style='height: 100%; width: 100%; object-fit: contain'>
                             </div>
                         </div>
                     </div>
@@ -171,7 +171,7 @@
 
                         <div class="collapse show" id="collapseCardExample2">
                             <div class="card-body">
-                                <img src = "{{ url_for('static', filename='plots/pairplot.jpg') }}" style='height: 100%; width: 100%; object-fit: contain'>
+                                <img src = "data:image/png;base64, {{ pairb64 }}" style='height: 100%; width: 100%; object-fit: contain'>
                             </div>
                         </div>
                     </div>
@@ -187,7 +187,7 @@
 
                         <div class="collapse show" id="collapseCardExample3">
                             <div class="card-body">
-                                <img src = "{{ url_for('static', filename='plots/candleplot.jpg') }}" style='height: 100%; width: 100%; object-fit: contain'>
+                                <img src = "data:image/png;base64, {{ candleb64 }}" style='height: 100%; width: 100%; object-fit: contain'>
                             </div>
                         </div>
                     </div>
