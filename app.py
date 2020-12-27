@@ -1,5 +1,6 @@
 # for serving web interface
-from flask import Flask, render_template, flash, redirect, request, url_for
+from flask import Flask, render_template, flash, redirect, request, url_for, session
+from flask_session import Session
 from werkzeug.utils import secure_filename
 from markupsafe import Markup, escape
 import re
@@ -18,6 +19,9 @@ from io import BytesIO
 import base64
 
 app = Flask(__name__)
+app.secret_key = '69'
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 ########################################################################################################### Variables
 ### Flask Variables
@@ -25,10 +29,10 @@ UPLOAD_FOLDER = '/uploads'
 ALLOWED_EXTENSIONS = {'csv'}
 
 ### Variables used throughout our code
-dataframe = None
-dataLoad = None
-dataColumns = None
-dataframe_num = None
+# dataframe = None
+# dataLoad = None
+# dataColumns = None
+# dataframe_num = None
 
 
 ########################################################################################################### Flask routes
@@ -37,11 +41,11 @@ dataframe_num = None
 @app.route('/index')
 def datasetSubmit():
     # if csv not uploaded, redirect to csvupload 
-    if dataLoad == None:
+    if 'dataLoad' not in session:
         return render_template("csvupload.html")
 
     # if feature selection not done, redirect to featurechecker
-    if not dataLoad:
+    if not session['dataLoad']:
         return redirect(url_for('featurechecker'))
 
     else:
@@ -49,9 +53,10 @@ def datasetSubmit():
 
 @app.route('/csvuploader', methods=['GET', 'POST'])
 def csvuploader():
-    global dataframe
-    global dataColumns
-    global dataLoad
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
 
     if request.method == 'POST':
         # check if a file is submitted or not
@@ -71,16 +76,25 @@ def csvuploader():
         ## extract and safe dataframe columns
         if file and uploadChecker(file.filename):
             dataframe = pd.read_csv(file)
+            # dataframe.dropna(inplace = True)
+            session['dataframe'] = dataframe.to_dict('list')
+
             dataColumns = list(dataframe.columns)
+            print(dataColumns)
+            session['dataColumns'] = dataColumns
+            print(session['dataColumns'])
 
         dataLoad = False
+        session['dataLoad'] = dataLoad
+
         return redirect(url_for('featurechecker'))
 
 @app.route('/featurechecker', methods=['GET', 'POST'])
 def featurechecker():
-    global dataframe
-    global dataColumns
-    global dataLoad
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
 
     checkboxes = ''''''
     for column in dataColumns:
@@ -93,13 +107,17 @@ def featurechecker():
 
     # print(Markup(checkboxes))
     dataLoad = True
+    session['dataLoad'] = dataLoad
+
     return render_template("featurechecker.html", checkboxes = Markup(checkboxes))
         
 # gets checkbox input from feature selection list, sets columns we wanna use
 @app.route('/updateFeatureList', methods=['GET', 'POST'])
 def updateFeatureList():
-    global dataColumns
-    global dataframe_num
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
 
     # extract wanted features
     tcol = []
@@ -111,6 +129,7 @@ def updateFeatureList():
 
     # assign columns
     dataColumns = tcol
+    session['dataColumns'] = dataColumns
     print(tcol)
 
     # making numerical df
@@ -119,22 +138,24 @@ def updateFeatureList():
         if dataframe_num[col].dtype == np.dtype('O'):
             dataframe_num[col] = dataframe_num[col].astype('category')
             dataframe_num[col] = dataframe_num[col].cat.codes
+    session['dataframe_num'] = dataframe_num
 
     return redirect(url_for('dashboard'))
 
 # route for dashboard
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    global dataframe
-    global dataColumns
-    global dataLoad
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
 
     # if csv not uploaded, redirect to csvupload 
-    if dataLoad == None:
+    if 'dataLoad' not in session:
         return render_template("csvupload.html")
 
     # if feature selection not done, redirect to featurechecker
-    if not dataLoad:
+    if not session['dataLoad']:
         return redirect(url_for('featurechecker'))
 
     # get dataframe information
@@ -161,17 +182,26 @@ def dashboard():
             </div>
         '''
 
+    # session['dataframe'] = dataframe.to_dict('list')
+    # session['dataLoad'] = dataLoad
+    # session['dataColumns'] = dataColumns
+    # session['dataframe_num'] = dataframe_num
     return render_template("dashboard.html", tableInfo = Markup(tableInfo), columnInfo = Markup(columnInfo))
 
 # route to display dataframe/table
 @app.route('/tables')
 def tables():
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     # if csv not uploaded, redirect to csvupload 
-    if dataLoad == None:
+    if 'dataLoad' not in session:
         return render_template("csvupload.html")
 
     # if feature selection not done, redirect to featurechecker
-    if not dataLoad:
+    if not session['dataLoad']:
         return redirect(url_for('featurechecker'))
 
     # display table header and footer
@@ -204,16 +234,25 @@ def tables():
         '''
         tablebody += trow
 
+    # session['dataframe'] = dataframe.to_dict('list')
+    # session['dataLoad'] = dataLoad
+    # session['dataColumns'] = dataColumns
+    # session['dataframe_num'] = dataframe_num
     return render_template("tables.html", headfoot = Markup(headfoot), tablebody = Markup(tablebody))
 
 @app.route('/charts')
 def charts():
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     # if csv not uploaded, redirect to csvupload 
-    if dataLoad == None:
+    if 'dataLoad' not in session:
         return render_template("csvupload.html")
 
     # if feature selection not done, redirect to featurechecker
-    if not dataLoad:
+    if not session['dataLoad']:
         return redirect(url_for('featurechecker'))
 
     # generate plots
@@ -222,6 +261,10 @@ def charts():
     pairb64 = getPairplot()
     candleb64 = getCandleplot()
 
+    # session['dataframe'] = dataframe.to_dict('list')
+    # session['dataLoad'] = dataLoad
+    # session['dataColumns'] = dataColumns
+    # session['dataframe_num'] = dataframe_num
     return render_template("charts.html", distb64 = distb64, countb64 = countb64, pairb64 = pairb64, candleb64 = candleb64)
 
 @app.route('/test')
@@ -230,17 +273,42 @@ def test():
 
 @app.route('/reupload')
 def reupload():
-    global dataframe
-    global dataLoad
-    global dataColumns
-    global dataframe_num
-
-    dataframe = None
-    dataLoad = None
-    dataColumns = None
-    dataframe_num = None
+    # reset session variables 
+    session.pop('dataframe', None)
+    session.pop('dataLoad', None)
+    session.pop('dataColumns', None)
+    session.pop('dataframe_num', None)
 
     return redirect(url_for('datasetSubmit'))
+
+@app.route('/selectTarget', methods=['GET', 'POST'])
+def selectTarget():
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
+    checkboxes = ''''''
+    for column in dataColumns:
+        checkboxes += f'''
+            <tr>
+                <td>{ column }</td>
+                <td><input type = "radio" name = "target" value = "{ column }"/></td>
+            </tr>
+        '''
+
+    return render_template("selectTarget.html", checkboxes = Markup(checkboxes))
+
+@app.route('/setTarget', methods=['GET', 'POST'])
+def setTarget():
+    print(request)
+    
+@app.route('/predicitveAnalysis', methods=['GET', 'POST'])
+def predicitveAnalysis():
+    # select target
+    # select algorithms
+    pass
+
 
 ########################################################################################################### Helper Functions
 
@@ -260,6 +328,11 @@ def getDistplot():
     Arguments:
         path - Location where to save the plot 
     '''
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     fig, ax = plt.subplots(len(dataColumns), figsize=(len(dataColumns) * 2, len(dataColumns) * 2))
 
     for i, col in enumerate(dataColumns):
@@ -282,6 +355,11 @@ def getCountplot(path = './static/plots/countplot.jpg'):
     Arguments:
         path - Location where to save the plot 
     '''
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     tcols = []
     for col in dataColumns:
         if len(dataframe[col].unique()) < 20:
@@ -309,6 +387,11 @@ def getPairplot(path = './static/plots/pairplot.jpg'):
     Arguments:
         path - Location where to save the plot 
     '''
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     tdf = dataframe_num[dataColumns]
     pp = sns.pairplot(tdf)
     
@@ -327,6 +410,11 @@ def getCandleplot(path = './static/plots/candleplot.jpg'):
     Arguments:
         path - Location where to save the plot 
     '''
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
     tcols = []
     for col in dataColumns:
         if dataframe[col].dtype != np.dtype('O'):
