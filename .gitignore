@@ -2,3 +2,4 @@
 datavizflask
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+flask_session
