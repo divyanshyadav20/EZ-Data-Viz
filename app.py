@@ -281,33 +281,6 @@ def reupload():
 
     return redirect(url_for('datasetSubmit'))
 
-@app.route('/selectTarget', methods=['GET', 'POST'])
-def selectTarget():
-    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
-    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
-    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
-    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
-
-    checkboxes = ''''''
-    for column in dataColumns:
-        checkboxes += f'''
-            <tr>
-                <td>{ column }</td>
-                <td><input type = "radio" name = "target" value = "{ column }"/></td>
-            </tr>
-        '''
-
-    return render_template("selectTarget.html", checkboxes = Markup(checkboxes))
-
-@app.route('/setTarget', methods=['GET', 'POST'])
-def setTarget():
-    print(request)
-    
-@app.route('/predicitveAnalysis', methods=['GET', 'POST'])
-def predicitveAnalysis():
-    # select target
-    # select algorithms
-    pass
 
 
 ########################################################################################################### Helper Functions
