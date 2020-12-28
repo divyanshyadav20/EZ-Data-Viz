@@ -40,6 +40,9 @@ ALLOWED_EXTENSIONS = {'csv'}
 @app.route('/')
 @app.route('/index')
 def datasetSubmit():
+    if 'dataLoad' in session:
+        reupload()
+
     # if csv not uploaded, redirect to csvupload 
     if 'dataLoad' not in session:
         return render_template("csvupload.html")
@@ -280,7 +283,6 @@ def reupload():
     session.pop('dataframe_num', None)
 
     return redirect(url_for('datasetSubmit'))
-
 
 
 ########################################################################################################### Helper Functions
