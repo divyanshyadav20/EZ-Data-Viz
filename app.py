@@ -38,7 +38,6 @@ ALLOWED_EXTENSIONS = {'csv'}
 ########################################################################################################### Flask routes
 # route for csv upload page
 @app.route('/')
-@app.route('/index')
 def datasetSubmit():
     if 'dataLoad' in session:
         reupload()
@@ -79,6 +78,7 @@ def csvuploader():
         ## extract and safe dataframe columns
         if file and uploadChecker(file.filename):
             dataframe = pd.read_csv(file)
+            dataframe = dataframe.fillna(dataframe.mean())
             # dataframe.dropna(inplace = True)
             session['dataframe'] = dataframe.to_dict('list')
 
@@ -146,6 +146,7 @@ def updateFeatureList():
     return redirect(url_for('dashboard'))
 
 # route for dashboard
+@app.route('/index')
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
@@ -323,12 +324,9 @@ def getDistplot():
 
     return b64img
 
-def getCountplot(path = './static/plots/countplot.jpg'):
+def getCountplot():
     '''
     Plots count/histogram plot for all categorical dataframe columns and saves the plot.
-
-    Arguments:
-        path - Location where to save the plot 
     '''
     dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
     dataLoad = session['dataLoad'] if 'dataLoad' in session else None
@@ -355,12 +353,9 @@ def getCountplot(path = './static/plots/countplot.jpg'):
 
     return b64img
 
-def getPairplot(path = './static/plots/pairplot.jpg'):
+def getPairplot():
     '''
     Plots pair plot for all dataframe column and saves the plot.
-
-    Arguments:
-        path - Location where to save the plot 
     '''
     dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
     dataLoad = session['dataLoad'] if 'dataLoad' in session else None
@@ -368,22 +363,25 @@ def getPairplot(path = './static/plots/pairplot.jpg'):
     dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
 
     tdf = dataframe_num[dataColumns]
-    pp = sns.pairplot(tdf)
+    # pp = sns.pairplot(tdf)
+
+    f, ax = plt.subplots(figsize=(11, 9))
+    corr = tdf.corr()
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+    sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True, linewidths=.5, cbar_kws={"shrink": .5})
     
     img = BytesIO()
-    pp.savefig(img, format='png')
+    f.savefig(img, format='png')
 
     img.seek(0)
     b64img = base64.b64encode(img.getvalue()).decode('utf8')
 
     return b64img
 
-def getCandleplot(path = './static/plots/candleplot.jpg'):
+def getCandleplot():
     '''
     Plots candle plot for all dataframe column and saves the plot.
-
-    Arguments:
-        path - Location where to save the plot 
     '''
     dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
     dataLoad = session['dataLoad'] if 'dataLoad' in session else None
