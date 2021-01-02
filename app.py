@@ -18,6 +18,20 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
+# machine learning
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
+## for classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+## for regression
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.svm import SVR
+
 app = Flask(__name__)
 app.secret_key = '69'
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -278,12 +292,127 @@ def test():
 @app.route('/reupload')
 def reupload():
     # reset session variables 
+    # session.pop('', None)
     session.pop('dataframe', None)
     session.pop('dataLoad', None)
     session.pop('dataColumns', None)
     session.pop('dataframe_num', None)
+    session.pop('mlType', None)
+    session.pop('trainX', None)
+    session.pop('trainY', None)
+    session.pop('targetVar', None)
 
     return redirect(url_for('datasetSubmit'))
+
+@app.route('/selectTarget', methods=['GET', 'POST'])
+def selectTarget():
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+    dataLoad = session['dataLoad'] if 'dataLoad' in session else None
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe_num = session['dataframe_num'] if 'dataframe_num' in session else None
+
+    checkboxes = ''''''
+    for column in dataColumns:
+        checkboxes += f'''
+            <tr>
+                <td>{ column }</td>
+                <td><input type = "radio" name = "target" value = "{ column }"/></td>
+            </tr>
+        '''
+
+    return render_template("selectTarget.html", checkboxes = Markup(checkboxes))
+
+@app.route('/setTarget', methods=['GET', 'POST'])
+def setTarget():
+    dataColumns = session['dataColumns'] if 'dataColumns' in session else None
+    dataframe = pd.DataFrame(session['dataframe']) if 'dataframe' in session else None
+
+    # get and store target variable
+    session['targetVar'] = request.form.getlist(f'target')[0]
+
+    # pre-process dataframes
+    ## generate train Features
+    trainX = dataframe.loc[:, [col for col in dataColumns if col != session['targetVar']]]
+
+    ## get categorical features and one hot encode
+    categoricalFeatures = [col for col in list(trainX.columns) if trainX[col].dtype == 'object']
+    for col in categoricalFeatures:
+        # temporariry story categorical col and delete from trainDF
+        t = trainX[col]
+        trainX.drop([col], axis = 1, inplace = True)
+
+        # generate one-hot
+        oneHot = pd.get_dummies(t, prefix=col)
+
+        # add one-hot to trainDF
+        trainX = pd.concat([trainX, oneHot], axis = 1)
+    
+    ## generate train Target
+    trainY = dataframe.loc[:, session['targetVar']]
+    standardScaler = StandardScaler()
+    session['trainX'] = standardScaler.fit_transform(trainX.values)
+
+    if dataframe[session['targetVar']].dtype == 'int64':
+        session['mlType'] = 'Regression'
+        session['trainY'] = trainY.values
+
+    elif dataframe[session['targetVar']].dtype == 'object':
+        # if the problem is of classification we would have to one-hot target too
+        trainY = pd.get_dummies(trainY)
+        session['trainY'] = trainY.values
+        session['mlType'] = 'Classification'
+
+    print(len(session['trainX']))
+    print(len(session['trainY']))
+
+    # can present models we want to test
+    return render_template("disptarget.html", algoName = Markup(session['mlType']))
+    
+@app.route('/predicitveAnalysis', methods=['GET', 'POST'])
+def predicitveAnalysis():
+    if 'models' not in session:
+        return redirect(url_for('selectTarget'))
+    
+    mlType = session['mlType']
+    trainX = session['trainX']
+    trainY = session['trainY']
+
+    if mlType == 'Regression':
+        modelName = ['Linear Regression', 'Ridge Regression', 'Support Vector Regression']
+        models = [LinearRegression(), Ridge(), SVR()]
+    elif mlType == 'Classification':
+        modelName = ['Logistic Classification', 'Random Forest Classification', 'Support Vector Classification']
+        models = [LogisticRegression(), RandomForestClassifier(), SVC()]
+    else:
+        return redirect(url_for('selectTarget'))
+
+    crossValidationAccPlot = {}
+    crossValidationAccAvg = {}
+    for idx, model in enumerate(models):
+        kFold = 10
+        tList = cross_val_score(model, trainX, trainY, cv = kFold)
+        crossValidationAccPlot[modelName[idx]] = getAccplot(tList, kFold, modelName[idx])
+        crossValidationAccAvg[modelName[idx]] = np.mean(tList)
+
+    html = ''''''
+    for idx, key in enumerate(modelName):
+        html += f'''
+            <div class="card shadow mb-4">
+                <a href="#collapseCardExample{ idx }" class="d-block card-header py-3" data-toggle="collapse"
+                    role="button" aria-expanded="true" aria-controls="collapseCardExample{ idx }">
+                    <h6 class="m-0 font-weight-bold text-primary">{ key } - Mean Accuracy { round(crossValidationAccAvg[key], 2) }</h6>
+                </a>
+
+                <div class="collapse show" id="collapseCardExample{ idx }">
+                    <div class="card-body">
+                        <img src = "data:image/png;base64, { crossValidationAccPlot[key] }" style='height: 100%; width: 100%; object-fit: contain'>
+                    </div>
+                </div>
+            </div>
+        '''
+        
+
+    return render_template("pred.html", htmlCode = Markup(html))
 
 
 ########################################################################################################### Helper Functions
@@ -407,6 +536,26 @@ def getCandleplot():
     b64img = base64.b64encode(img.getvalue()).decode('utf8')
 
     return b64img
+
+def getAccplot(accList, kFold, modelName):
+    fig, ax = plt.subplots(1, figsize=(5, 5))
+
+    plt.plot(range(1, kFold + 1), accList, 'g', label = modelName)
+    plt.title('Cross-Validation accuracy')
+    plt.xlabel('K-Fold')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    img = BytesIO()
+    fig.savefig(img, format='png')
+    plt.close(fig)
+
+    img.seek(0)
+    b64img = base64.b64encode(img.getvalue()).decode('utf8')
+
+    return b64img
+    
+
 
 ########################################################################################################### Main
 
