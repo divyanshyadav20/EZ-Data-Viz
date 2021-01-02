@@ -357,7 +357,7 @@ def setTarget():
         trainY = pd.get_dummies(trainY)
         session['trainY'] = trainY.values
         session['mlType'] = 'Classification'
-        
+
     else:
         session['mlType'] = 'Regression'
         session['trainY'] = trainY.values
@@ -370,7 +370,7 @@ def setTarget():
     
 @app.route('/predicitveAnalysis', methods=['GET', 'POST'])
 def predicitveAnalysis():
-    if 'models' not in session:
+    if 'mlType' not in session:
         return redirect(url_for('selectTarget'))
     
     mlType = session['mlType']
