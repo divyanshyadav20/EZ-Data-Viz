@@ -352,15 +352,15 @@ def setTarget():
     standardScaler = StandardScaler()
     session['trainX'] = standardScaler.fit_transform(trainX.values)
 
-    if dataframe[session['targetVar']].dtype == 'int64':
-        session['mlType'] = 'Regression'
-        session['trainY'] = trainY.values
-
-    elif dataframe[session['targetVar']].dtype == 'object':
+    if dataframe[session['targetVar']].dtype == 'object':
         # if the problem is of classification we would have to one-hot target too
         trainY = pd.get_dummies(trainY)
         session['trainY'] = trainY.values
         session['mlType'] = 'Classification'
+        
+    else:
+        session['mlType'] = 'Regression'
+        session['trainY'] = trainY.values
 
     print(len(session['trainX']))
     print(len(session['trainY']))
