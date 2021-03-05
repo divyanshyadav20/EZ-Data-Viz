@@ -2,6 +2,8 @@
 
 Data Viz helps in easy data analysis, rapid prototyping, and streamlining data analysis pipeline.
 
+Kubernetes Deployment URL: http://23.251.144.196:8081/
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
