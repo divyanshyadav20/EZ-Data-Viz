@@ -2,7 +2,7 @@
 
 Data Viz helps in easy data analysis, rapid prototyping, and streamlining data analysis pipeline.
 
-Kubernetes Deployment URL: http://23.251.144.196:8081/
+Heroku Deployment URL: https://ez-data-viz.herokuapp.com
 
 ## Getting Started
 
