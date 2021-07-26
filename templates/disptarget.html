@@ -34,20 +34,23 @@
                     <div class="col-lg-7">
                         <div class="p-5">
                             <div class="text-center">
-                                <h1 class="h4 text-gray-900 mb-4">Upload Dataset! <a href = "https://drive.google.com/file/d/19Kct8ENTAOJ8RaHBcOEEh8TRescM7hWs/view?usp=sharing">Example Dataset</a></h1>
-                                
+                                <h1 class="h4 text-gray-900 mb-4">Select Features!</h1>
                             </div>
-                            <form method=post action="csvuploader" enctype=multipart/form-data>
-                                
-                                <div class="form-group">
-                                    <input type = "file" name = "csv-file" class="form-control form-control-user" id="csv-file"/>
+
+
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Algorithm Detected</h6>
+                                    <p class="mb-4">Please verify the auto-detected algorithm.</p>
                                 </div>
-                                
-                                <input type = "submit" class="btn btn-primary btn-user btn-block" value="Upload"/>
-                                <!-- <a href="csvuploader" class="btn btn-primary btn-user btn-block" method=post>
-                                    Upload CSV
-                                </a> -->
-                            </form>
+                                <div class="card-body">
+                                    
+                                    <form method=post action="predicitveAnalysis" enctype=multipart/form-data>
+                                        Detected: {{ algoName }} <br>
+                                        <input type = "submit" class="btn btn-primary btn-user btn-block" value="Next"/>
+                                    </form>
+                                </div>
+                            </div>
                             <hr>
                         </div>
                     </div>

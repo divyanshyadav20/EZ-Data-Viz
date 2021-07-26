@@ -2,6 +2,8 @@
 
 Data Viz helps in easy data analysis, rapid prototyping, and streamlining data analysis pipeline.
 
+Heroku Deployment URL: https://ez-data-viz.herokuapp.com
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
